@@ -19,6 +19,8 @@ import { App } from './models/app.model';
       username: 'root',
       password: '123321',
       database: 'gladfy',
+      synchronize: true,
+      autoLoadModels: true,
       models: [App],
     }),
     CatsModule,

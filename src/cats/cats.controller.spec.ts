@@ -3,49 +3,51 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { App } from '../models/app.model';
 import { CatsController } from './cats.controller';
 import { CatsService } from './cats.service';
+import { getModelToken } from '@nestjs/sequelize';
+
+const testCat = [
+  {
+    id: '9328889d-86d5-4be9-beb9-4119e196d9ba',
+    firstName: 'Jack',
+  },
+];
 
 describe('CatsController', () => {
   let catsController: CatsController;
   let catsService: CatsService;
+  let model: typeof App;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      imports: [
-        SequelizeModule.forRoot({
-          dialect: 'mysql',
-          host: 'localhost',
-          port: 3307,
-          username: 'root',
-          password: '123321',
-          database: 'gladfy',
-          models: [App],
-        }),
-      ],
       controllers: [CatsController],
-      providers: [CatsService],
+      providers: [
+        CatsService,
+        {
+          provide: getModelToken(App),
+          useValue: {
+            findAll: jest.fn(() => testCat),
+            create: jest.fn(() => testCat),
+          },
+        },
+      ],
     }).compile();
 
     catsService = app.get<CatsService>(CatsService);
     catsController = app.get<CatsController>(CatsController);
+    model = app.get<typeof App>(getModelToken(App));
   });
 
   describe('root', () => {
-    it('should return cats list', () => {
-      const result = Promise.all([
-        {
-          id: '9328889d-86d5-4be9-beb9-4119e196d9ba',
+    it('should return cats list', async () => {
+      expect(await catsController.findAll()).toEqual(testCat);
+    });
+
+    it('should add a cat', async () => {
+      expect(
+        await catsController.newCat({
           firstName: 'Jack',
-        },
-      ] as App[]);
-
-      jest.spyOn(catsService, 'getCats').mockImplementation(() => result);
-
-      expect(catsController.findAll()).toStrictEqual([
-        'Seu Antônio',
-        'Dona Filomena',
-        'Jusé Cláudio',
-        'Juaquim',
-      ]);
+        }),
+      ).toEqual(testCat);
     });
   });
 });
